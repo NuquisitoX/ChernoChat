@@ -5,6 +5,11 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -26,27 +31,67 @@ public class Client extends JFrame {
 	private JTextField txtMessage;
 	private JTextArea txtHistory;
 	
+	private DatagramSocket socket;
+	private InetAddress ip;
 	
+	private Thread send;
 
 	public Client(String name, String address, int port) {
 		setTitle("Cherno Chat - " + name);
 		this.name = name;
 		this.address = address;
 		this.port = port;
-		boolean connect = openConnection(address, port);
+		boolean connect = openConnection(address);
 		createWindow();
 		if(!connect){
 			System.err.println("Connection failed!");
 			console("Connection failed!");
 		} else {
 			console("Attempting a connection to " + address + ":" + port + ", user: " + name);
+			String connection = "/c/" + name;
+			send(connection.getBytes());
 		}
 	}
-
-	private boolean openConnection(String address, int port) {
-		return false;
+	
+	private boolean openConnection(String address) {
+		try {
+			socket = new DatagramSocket();
+			ip = InetAddress.getByName(address);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	
+	private String receive() {
+		byte[] data = new byte[1024];
+		DatagramPacket packet = new DatagramPacket(data, data.length);
+		
+		try {
+			socket.receive(packet);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		String message = new String(packet.getData());
+		return message;
 	}
 
+	private void send(final byte[] data) {
+		send = new Thread("Send") {
+			public void run() {
+				DatagramPacket packet = new DatagramPacket(data, data.length, ip, port);
+				try {
+					socket.send(packet);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		send.start();
+	}
+	
 	private void createWindow() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setSize(880, 550);
@@ -111,6 +156,7 @@ public class Client extends JFrame {
 			return;
 		message = name + ": " + message;
 		console(message);
+		send(message.getBytes());
 		txtMessage.setText("");
 	}
 
