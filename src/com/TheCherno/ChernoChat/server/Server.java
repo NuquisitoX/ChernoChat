@@ -2,6 +2,7 @@ package com.TheCherno.ChernoChat.server;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,13 +63,36 @@ public class Server implements Runnable{
 		receive.start();
 	}
 	
+	private void sendToAll(String message) {
+		for(ServerClient client: clients) {
+			send(message.getBytes(), client.ip, client.port);
+		}
+	}
+	
+	private void send(final byte[] data, final InetAddress ip, final int port) {
+		send = new Thread("Send") {
+			public void run() {
+				DatagramPacket packet = new DatagramPacket(data, data.length, ip, port);
+				try {
+					socket.send(packet);
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+		};
+		send.start();
+	}
+	
 	private void process(DatagramPacket packet) {
 		String string = new String(packet.getData());
-		int end = string.indexOf(0);
 		if (string.startsWith("/c/")) {
-			String name = new String(string.substring(3, end));
-			clients.add(new ServerClient(name, packet.getAddress(), packet.getPort(), 100));
-			System.out.println(name + " connected to the server!");
+			// UUID id = UUID.randomUUID();
+			int id = UniqueIdentifier.getIdentifier();
+			System.out.println("Identifier: " + id);
+			clients.add(new ServerClient(string.substring(3, string.length()), packet.getAddress(), packet.getPort(), id));
+			System.out.println(string.substring(3, string.length()));
+		} else if(string.startsWith("/m/")) {
+			sendToAll(string);
 		} else {
 			System.out.println(string);
 		}

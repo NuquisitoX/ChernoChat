@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -25,7 +24,6 @@ public class Client extends JFrame {
 	private JPanel contentPane;
 
 	private String name;
-	private String address;
 	private int port;
 
 	private JTextField txtMessage;
@@ -34,12 +32,11 @@ public class Client extends JFrame {
 	private DatagramSocket socket;
 	private InetAddress ip;
 	
-	private Thread send;
+	private Thread send, receive;
 
 	public Client(String name, String address, int port) {
 		setTitle("Cherno Chat - " + name);
 		this.name = name;
-		this.address = address;
 		this.port = port;
 		boolean connect = openConnection(address);
 		createWindow();
@@ -50,6 +47,7 @@ public class Client extends JFrame {
 			console("Attempting a connection to " + address + ":" + port + ", user: " + name);
 			String connection = "/c/" + name;
 			send(connection.getBytes());
+			receive();
 		}
 	}
 	
@@ -64,20 +62,31 @@ public class Client extends JFrame {
 		return true;
 	}
 	
-	private String receive() {
-		byte[] data = new byte[1024];
-		DatagramPacket packet = new DatagramPacket(data, data.length);
-		
-		try {
-			socket.receive(packet);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-		String message = new String(packet.getData());
-		return message;
+	private void receive() {
+		receive = new Thread("Receive") {
+			public void run() {
+				while(true) {
+					byte[] data = new byte[1024];
+					DatagramPacket packet = new DatagramPacket(data, data.length);
+					
+					try {
+						socket.receive(packet);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					
+					String message = new String(packet.getData());
+					process(message);
+				}
+			}
+		};
+		receive.start();
 	}
 
+	private void process(String message) {
+		console(message);
+	}
+	
 	private void send(final byte[] data) {
 		send = new Thread("Send") {
 			public void run() {
@@ -156,6 +165,7 @@ public class Client extends JFrame {
 			return;
 		message = name + ": " + message;
 		console(message);
+		message = "/m/" + message;
 		send(message.getBytes());
 		txtMessage.setText("");
 	}
