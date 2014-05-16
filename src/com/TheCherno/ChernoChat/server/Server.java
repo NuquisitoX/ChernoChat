@@ -69,6 +69,10 @@ public class Server implements Runnable{
 		}
 	}
 	
+	private void send(String message, InetAddress address, int port) {
+		message += "/e/";
+		send(message.getBytes(), address, port);
+	}
 	private void send(final byte[] data, final InetAddress ip, final int port) {
 		send = new Thread("Send") {
 			public void run() {
@@ -83,6 +87,7 @@ public class Server implements Runnable{
 		send.start();
 	}
 	
+	
 	private void process(DatagramPacket packet) {
 		String string = new String(packet.getData());
 		if (string.startsWith("/c/")) {
@@ -92,7 +97,7 @@ public class Server implements Runnable{
 			clients.add(new ServerClient(string.substring(3, string.length()), packet.getAddress(), packet.getPort(), id));
 			System.out.println(string.substring(3, string.length()));
 			String idConfirm = "/c/" + id;
-			send(idConfirm.getBytes(), packet.getAddress(), packet.getPort());
+			send(idConfirm, packet.getAddress(), packet.getPort());
 		} else if(string.startsWith("/m/")) {
 			sendToAll(string);
 		} else {
