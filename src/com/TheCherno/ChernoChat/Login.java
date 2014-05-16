@@ -10,7 +10,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.EmptyBorder;
 
 public class Login extends JFrame {
@@ -94,7 +93,7 @@ public class Login extends JFrame {
 
 	private void login(String name, String address, int port) {
 		dispose();
-		new Client(name, address, port);
+		new ClientWindow(name, address, port);
 	}
 
 	public static void main(String[] args) {
