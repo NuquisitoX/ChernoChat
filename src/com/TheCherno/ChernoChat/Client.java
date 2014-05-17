@@ -79,4 +79,14 @@ public class Client {
 		};
 		send.start();
 	}
+	
+	public void close() {
+		new Thread() {
+			public void run() {
+				synchronized (socket) {
+					socket.close();			
+				}				
+			}
+		}.start();
+	}
 }

@@ -31,7 +31,11 @@ public class Server implements Runnable{
 		running = true;
 		manageClients();
 		receive();
-		System.out.println("Server started on port " + port);
+		try {
+			System.out.println("Server started on " + InetAddress.getLocalHost() + ":" + port);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void manageClients() {
@@ -91,18 +95,37 @@ public class Server implements Runnable{
 	private void process(DatagramPacket packet) {
 		String string = new String(packet.getData());
 		if (string.startsWith("/c/")) {
-			// UUID id = UUID.randomUUID();
 			int id = UniqueIdentifier.getIdentifier();
-			System.out.println("Identifier: " + id);
-			clients.add(new ServerClient(string.substring(3, string.length()), packet.getAddress(), packet.getPort(), id));
-			System.out.println(string.substring(3, string.length()));
+			clients.add(new ServerClient(string.split("/c/|/e/")[1], packet.getAddress(), packet.getPort(), id));
+			System.out.println("ID: " + id + ", added " + string.split("/c/|/e/")[1] + " to the serverlist!");
 			String idConfirm = "/c/" + id;
 			send(idConfirm, packet.getAddress(), packet.getPort());
+		} else if(string.startsWith("/d/")) {
+			int id = Integer.parseInt(string.split("/d/|/e/")[1]);
+			disconnect(id, true);
 		} else if(string.startsWith("/m/")) {
 			sendToAll(string);
 		} else {
 			System.out.println(string);
 		}
+	}
+	
+	private void disconnect(int id, boolean status) {
+		ServerClient c = null;
+		for(ServerClient client: clients) {
+			if(client.getID() == id) {
+				c = client;
+				clients.remove(client);
+				break;
+			}
+		}
+		String message = "";
+		if (status) {
+			message = "Client " + c.name + " (" + c.getID() + ") @ " + c.ip.toString() + ":" + c.port + " disconnected.";
+		} else {
+			message = "Client " + c.name + " (" + c.getID() + ") @ " + c.ip.toString() + ":" + c.port + " timed out.";
+		}
+		System.out.println(message);
 	}
 	
 }

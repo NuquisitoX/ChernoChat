@@ -5,6 +5,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -36,7 +38,7 @@ public class ClientWindow extends JFrame implements Runnable{
 			console("Connection failed!");
 		} else {
 			console("Attempting a connection to " + address + ":" + port + ", user: " + name);
-			String connection = "/c/" + name;
+			String connection = "/c/" + name + "/e/";
 			client.send(connection.getBytes());
 			running = true;
 			run = new Thread(this, "Running");
@@ -65,7 +67,7 @@ public class ClientWindow extends JFrame implements Runnable{
 						client.setID(Integer.parseInt(message.split("/c/|/e/")[1]));
 						console("Succesfully connected to server! ID: " + client.getID());
 					} else if(message.startsWith("/m/")) {
-						String text = message.split("/m/|/e/")[1];
+						String text = message.substring(3).split("/e/")[0];
 						console(text);
 					}
 				}
@@ -134,6 +136,15 @@ public class ClientWindow extends JFrame implements Runnable{
 		gbc_btnSend.gridy = 2;
 		contentPane.add(btnSend, gbc_btnSend);
 
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				String disconnect = "/d/" + client.getID() + "/e/";
+				client.send(disconnect.getBytes());
+				running = false;
+				client.close();
+			}
+		});
+		
 		setVisible(true);
 		txtMessage.requestFocusInWindow();
 	}
